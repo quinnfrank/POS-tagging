@@ -192,7 +192,7 @@ class BLSTM(nn.Module):
 
 def train_BLSTM(model, train_set, test_set,
                 num_epochs=100, batch_size=16,
-                opt_params={lr: 0.01, momentum: 0.8},
+                opt_params={'lr': 0.01, 'momentum': 0.8},
                 use_cuda=True, train_summ=None, print_every=1):
     """Trains a BLSTM model for some fixed number of epochs.
        Loads data in batches, shuffling after each full epoch
@@ -304,7 +304,7 @@ def plot_train_summ(train_summ):
     epochs = np.linspace(0, train_summ['num_epochs'], len(train_summ['loss']))
     ax.plot(epochs, train_summ['loss'], label="train")
     ax.legend()
-    ax.set_title(f"Training Curve for BLSTM")
+    #ax.set_title(f"Training Curve for BLSTM")
     ax.set_xlabel("epoch number")
     ax.set_ylabel("cross-entropy loss")
     plt.show()
@@ -314,7 +314,7 @@ def plot_train_summ(train_summ):
     for dataset in ["train", "test"]:
         ax.plot(epochs, train_summ[f'{dataset}_acc'], label=dataset)
     ax.legend()
-    ax.set_title(f"Classification Accuracy for BLSTM")
+    #ax.set_title(f"Classification Accuracy for BLSTM")
     ax.set_xlabel("epoch number")
     ax.set_ylabel("accuracy")
     ax.legend()
