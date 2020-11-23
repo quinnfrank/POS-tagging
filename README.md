@@ -18,6 +18,7 @@ The following Python packages are required to run the notebook and all modules:
 * `numpy`
 * `pandas`
 * `matplotlib`
+* `scikit-learn`
 * `torch`
 * `gensim`
 * `nltk` with "tagset", "brown", "punkt", and "averaged_perceptron_tagger" installed (the notebook does this automatically)
