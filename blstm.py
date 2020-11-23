@@ -1,3 +1,7 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
 import torch
 import torch.nn as nn
 from torch.nn.utils.rnn import pad_sequence
@@ -28,11 +32,11 @@ def split_tagged_sents(tagged_sents):
     return untuple(split_sents)
 
 
-def train_fasttext(untagged_sents, *args, **kwargs):
+def train_fasttext(untagged_sents, size=100):
     """Trains a FastText word embedder to convert words to dense vector form.
        Input must be an iterable of iterable of tokens (UNTAGGED)."""
     
-    embedder = FastText(untagged_train, *args, **kwargs)
+    embedder = FastText(sentences=untagged_sents, size=size)
     return embedder
 
 
@@ -78,7 +82,7 @@ class POSDataset(torch.utils.data.Dataset):
         sent_list, tag_lists = split_tagged_sents(these_sentences)
         
         # Convert both the words and tags to numerical form
-        embedded_list = [torch.tensor(embedder.wv[sent]) for sent in sent_list]
+        embedded_list = [torch.tensor(self.embedder.wv[sent]) for sent in sent_list]
         label_list = [torch.tensor([get_loc(self.tagset, tag, "X") for tag in tag_list])
                       for tag_list in tag_lists]
         
@@ -140,15 +144,16 @@ class BLSTM(nn.Module):
        input shape:  (seq_len, batch_size, input_size),
        output shape: (seq_len, batch_size, output_size), softmax along dim=2"""
     
-    def __init__(self, embed_size, hidden_size, num_layers, output_size):
+    def __init__(self, embed_size, output_size,
+                 hidden_size=128, num_layers=2, dropout=0.2):
         super(BLSTM, self).__init__()
         self.lstm = nn.LSTM(input_size=embed_size,
                             hidden_size=hidden_size,
                             num_layers=num_layers,
                             bidirectional=True,
-                            dropout=0.25)
+                            dropout=dropout)
         self.classify = nn.Sequential(nn.Linear(2 * hidden_size, output_size),
-                                      nn.Dropout(0.25))
+                                      nn.Dropout(dropout))
         
     def forward(self, X):
         output, (h, c) = self.lstm(X)
@@ -177,14 +182,17 @@ class BLSTM(nn.Module):
             for i in range(X.shape[1]):
                 y_true.append(y[:, i][mask[:, i]].tolist())
                 y_predict.append(yhat[:, i][mask[:, i]].tolist())
-                
-        return y_true, y_predict
+        
+        # Also retrieve the untagged tokens in same order, to keep interface consistent
+        sent_list, tag_lists = split_tagged_sents(dataset.sentences)
+        return sent_list, y_true, y_predict
     
 
 ### TRAINING, EVALUATION, AND PLOTTING RESULTS
 
 def train_BLSTM(model, train_set, test_set,
                 num_epochs=100, batch_size=16,
+                opt_params={lr: 0.01, momentum: 0.8},
                 use_cuda=True, train_summ=None, print_every=1):
     """Trains a BLSTM model for some fixed number of epochs.
        Loads data in batches, shuffling after each full epoch
@@ -208,7 +216,7 @@ def train_BLSTM(model, train_set, test_set,
     # Need to combine seq_len and batch_size along dim=0 to calculate loss
     flatten = nn.Flatten(0, 1)
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.8)
+    optimizer = torch.optim.SGD(model.parameters(), **opt_params)
     
     # Initialize a dictionary summarizing training, if one not provided
     if train_summ is None:

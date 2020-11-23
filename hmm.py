@@ -189,7 +189,7 @@ class HMM():
     def split_predict(self, tagged_sents):
         """Given an iterable of iterable of (token, POS) pairs,
            splits into [...[...token]], [...[...POS]] iterables and
-           returns parallel true POS indices, predicted POS indices"""
+           returns parallel tokens, true POS indices, predicted POS indices"""
         
         # Cannot generate until the HMM parameters are inferred
         assert hasattr(self, "pi"), "Must call .fit() before .split_predict()"
@@ -204,7 +204,7 @@ class HMM():
         y_true = [[get_loc(self.tagset, tag, self.default_tag) for tag in tag_list]
                   for tag_list in tag_lists]
         
-        return y_true, y_predict
+        return sent_list, y_true, y_predict
     
     def generate(self, size, max_len=100):
         """Generates an artificial labeled dataset from fitted HMM parameters.
